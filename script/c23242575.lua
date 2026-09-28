@@ -10,11 +10,10 @@ function s.initial_effect(c)
     e1:SetProperty(EFFECT_FLAG_UNCOPYABLE)
     e1:SetRange(LOCATION_HAND)
     e1:SetCondition(s.spcon)
-    e1:SetTarget(s.sptg)
     e1:SetOperation(s.spop)
     c:RegisterEffect(e1)
 
-    -- 1. Protección de Inmunitat a Destrucción por Efecto (a sí mismo)
+    -- 1. Protección de Inmunidad a Destrucción por Efecto (a sí mismo)
     local e2 = Effect.CreateEffect(c)
     e2:SetType(EFFECT_TYPE_SINGLE)
     e2:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)
@@ -77,35 +76,23 @@ function s.initial_effect(c)
     c:RegisterEffect(e8)
 end
 
--- Invocación mandando a Slifer (ID: 10000020)
-function s.spfilter(c)
-    return c:IsCode(10000020) and c:IsAbleToGrave()
+-- Filtro para detectar Slifer (Código oficial u otros Slifer por nombre)
+function s.sliferfilter(c)
+    return (c:IsCode(10000020) or c:IsCode(511600399) or c:ListsCode(10000020)) and c:IsAbleToGrave()
 end
 
 function s.spcon(e, c)
     if c == nil then return true end
     local tp = c:GetControler()
     return Duel.GetLocationCount(tp, LOCATION_MZONE) > 0
-        and Duel.IsExistingMatchingCard(s.spfilter, tp, LOCATION_DECK, 0, 1, nil)
-end
-
-function s.sptg(e, tp, eg, ep, ev, re, r, rp, c)
-    local g = Duel.GetMatchingGroup(s.spfilter, tp, LOCATION_DECK, 0, nil)
-    Duel.Hint(HINT_SELECTMSG, tp, HINTMSG_TOGRAVE)
-    local sg = g:SelectUnselect(Group.CreateGroup(), tp, false, true, 1, 1)
-    if sg then
-        sg:KeepAlive()
-        e:SetLabelObject(sg)
-        return true
-    end
-    return false
+        and Duel.IsExistingMatchingCard(s.sliferfilter, tp, LOCATION_DECK, 0, 1, nil)
 end
 
 function s.spop(e, tp, eg, ep, ev, re, r, rp, c)
-    local sg = e:GetLabelObject()
-    if sg then
-        Duel.SendtoGrave(sg, REASON_COST)
-        sg:DeleteGroup()
+    Duel.Hint(HINT_SELECTMSG, tp, HINTMSG_TOGRAVE)
+    local g = Duel.SelectMatchingCard(tp, s.sliferfilter, tp, LOCATION_DECK, 0, 1, 1, nil)
+    if #g > 0 then
+        Duel.SendtoGrave(g, REASON_COST)
     end
 end
 
