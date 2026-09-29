@@ -3,18 +3,17 @@ local s, id = GetID()
 function s.initial_effect(c)
     c:EnableReviveLimit()
 
-    -- Invocación Especial Sacrificando 1 Slifer el Dragón del Cielo (ID: 10000020)
+    -- Invocación Especial Sacrificando 1 Slifer el Dragón del Cielo
     local e1 = Effect.CreateEffect(c)
     e1:SetType(EFFECT_TYPE_FIELD)
     e1:SetCode(EFFECT_SPSUMMON_PROC)
     e1:SetProperty(EFFECT_FLAG_UNCOPYABLE)
     e1:SetRange(LOCATION_HAND)
     e1:SetCondition(s.spcon)
-    e1:SetTarget(s.sptg)
     e1:SetOperation(s.spop)
     c:RegisterEffect(e1)
 
-    -- 1. Inmunidad a cartas que no sean Bestia Divina (Jerarquía de Divinidad)
+    -- 1. Inmunidad a cartas que no sean Bestia Divina
     local e2 = Effect.CreateEffect(c)
     e2:SetType(EFFECT_TYPE_SINGLE)
     e2:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
@@ -44,7 +43,7 @@ function s.initial_effect(c)
     e5:SetOperation(s.posop)
     c:RegisterEffect(e5)
 
-    -- 4. Cadena de ataques continuos a monstruos hasta conectar un ataque directo
+    -- 4. Cadena de ataques continuos
     local e6 = Effect.CreateEffect(c)
     e6:SetType(EFFECT_TYPE_SINGLE + EFFECT_TYPE_CONTINUOUS)
     e6:SetCode(EVENT_DAMAGE_STEP_END)
@@ -64,9 +63,9 @@ function s.initial_effect(c)
     c:RegisterEffect(e7)
 end
 
--- Requisito de Invocación
+-- Filtro para detectar Slifer (oficial 10000020 o anime 511600399)
 function s.rfilter(c)
-    return c:IsCode(10000020) and c:IsReleasable()
+    return (c:IsCode(10000020) or c:IsCode(511600399) or c:ListsCode(10000020)) and c:IsReleasable()
 end
 
 function s.spcon(e, c)
@@ -76,23 +75,11 @@ function s.spcon(e, c)
         and Duel.IsExistingMatchingCard(s.rfilter, tp, LOCATION_MZONE, 0, 1, nil)
 end
 
-function s.sptg(e, tp, eg, ep, ev, re, r, rp, c)
-    local g = Duel.GetMatchingGroup(s.rfilter, tp, LOCATION_MZONE, 0, nil)
-    Duel.Hint(HINT_SELECTMSG, tp, HINTMSG_RELEASE)
-    local sg = g:SelectUnselect(Group.CreateGroup(), tp, false, true, 1, 1)
-    if sg then
-        sg:KeepAlive()
-        e:SetLabelObject(sg)
-        return true
-    end
-    return false
-end
-
 function s.spop(e, tp, eg, ep, ev, re, r, rp, c)
-    local sg = e:GetLabelObject()
-    if sg then
-        Duel.Release(sg, REASON_COST)
-        sg:DeleteGroup()
+    Duel.Hint(HINT_SELECTMSG, tp, HINTMSG_RELEASE)
+    local g = Duel.SelectMatchingCard(tp, s.rfilter, tp, LOCATION_MZONE, 0, 1, 1, nil)
+    if #g > 0 then
+        Duel.Release(g, REASON_COST)
     end
 end
 
@@ -118,7 +105,7 @@ function s.posop(e, tp, eg, ep, ev, re, r, rp)
     end
 end
 
--- Relanzamiento de ataque si destruye o combate monstruos
+-- Relanzamiento de ataque
 function s.atkop(e, tp, eg, ep, ev, re, r, rp)
     local c = e:GetHandler()
     local d = Duel.GetAttackTarget()
@@ -129,7 +116,7 @@ function s.atkop(e, tp, eg, ep, ev, re, r, rp)
     end
 end
 
--- Costo: Perder 1000 ATK/DEF permanentes
+-- Costo: Perder 1000 ATK/DEF
 function s.thcost(e, tp, eg, ep, ev, re, r, rp, chk)
     local c = e:GetHandler()
     if chk == 0 then return c:GetAttack() >= 1000 and c:GetDefense() >= 1000 end
