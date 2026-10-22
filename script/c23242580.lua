@@ -32,7 +32,7 @@ function s.initial_effect(c)
     e3:SetValue(aux.tgoval)
     c:RegisterEffect(e3)
 
-    -- 3. Negación Rápida de Mágica/Trampa/Monstruo
+    -- 3. Negación Rápida de Mágica/Trampa/Monstruo (Costo directo compatible)
     local e4 = Effect.CreateEffect(c)
     e4:SetDescription(aux.Stringid(id, 2))
     e4:SetCategory(CATEGORY_NEGATE + CATEGORY_DESTROY)
@@ -41,7 +41,7 @@ function s.initial_effect(c)
     e4:SetProperty(EFFECT_FLAG_DAMAGE_STEP + EFFECT_FLAG_DAMAGE_CAL)
     e4:SetRange(LOCATION_MZONE)
     e4:SetCondition(s.negcon)
-    e4:SetCost(aux.dxmcostgen(1, 1, nil))
+    e4:SetCost(s.cost)
     e4:SetTarget(s.negtg)
     e4:SetOperation(s.negop)
     c:RegisterEffect(e4)
@@ -55,8 +55,7 @@ function s.atttg(e, tp, eg, ep, ev, re, r, rp, chk, chkc)
     if chkc then return chkc:IsControler(1 - tp) and chkc:IsLocation(LOCATION_MZONE) and chkc:IsCanBeAttachedTo(e:GetHandler()) end
     if chk == 0 then return e:GetHandler():IsType(TYPE_XYZ) and Duel.IsExistingTarget(Card.IsCanBeAttachedTo, tp, 0, LOCATION_MZONE, 1, nil, e:GetHandler()) end
     Duel.Hint(HINT_SELECTMSG, tp, HINTMSG_ATTACH)
-    local g = Duel.SelectTarget(tp, Card.IsCanBeAttachedTo, tp, 0, LOCATION_MZONE, 1, 1, nil, e:GetHandler())
-    Duel.SetOperationInfo(0, CATEGORY_LEAVE_GRAVE, g, 1, 0, 0)
+    Duel.SelectTarget(tp, Card.IsCanBeAttachedTo, tp, 0, LOCATION_MZONE, 1, 1, nil, e:GetHandler())
 end
 
 function s.attop(e, tp, eg, ep, ev, re, r, rp)
@@ -77,6 +76,12 @@ end
 
 function s.negcon(e, tp, eg, ep, ev, re, r, rp)
     return rp ~= tp and Duel.IsChainNegatable(ev)
+end
+
+-- Costo de desacoplar 1 material directo y limpio
+function s.cost(e, tp, eg, ep, ev, re, r, rp, chk)
+    if chk == 0 then return e:GetHandler():CheckRemoveOverlayCard(tp, 1, REASON_COST) end
+    e:GetHandler():RemoveOverlayCard(tp, 1, 1, REASON_COST)
 end
 
 function s.negtg(e, tp, eg, ep, ev, re, r, rp, chk)
