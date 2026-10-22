@@ -32,7 +32,7 @@ function s.initial_effect(c)
     e3:SetCode(EVENT_FREE_CHAIN)
     e3:SetRange(LOCATION_MZONE)
     e3:SetCountLimit(1)
-    e3:SetCost(aux.dxmcostgen(1, 1, nil))
+    e3:SetCost(s.cost)
     e3:SetTarget(s.cleartg)
     e3:SetOperation(s.clearop)
     c:RegisterEffect(e3)
@@ -60,6 +60,12 @@ end
 function s.actlimit(e, re, tp)
     local loc = re:GetActivateLocation()
     return loc == LOCATION_GRAVE or loc == LOCATION_REMOVED
+end
+
+-- Costo de desacoplar 1 material corregido para móviles
+function s.cost(e, tp, eg, ep, ev, re, r, rp, chk)
+    if chk == 0 then return e:GetHandler():CheckRemoveOverlayCard(tp, 1, REASON_COST) end
+    e:GetHandler():RemoveOverlayCard(tp, 1, 1, REASON_COST)
 end
 
 function s.cleartg(e, tp, eg, ep, ev, re, r, rp, chk)
