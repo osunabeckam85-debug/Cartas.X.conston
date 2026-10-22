@@ -1,154 +1,117 @@
--- Abyss Vanguard Shark
+-- Abyss Shark Domain
 local s, id = GetID()
 function s.initial_effect(c)
-    -- 1. Invocación Especial masiva revelando desde la mano
+    -- Activar carta
     local e1 = Effect.CreateEffect(c)
-    e1:SetDescription(aux.Stringid(id, 0))
-    e1:SetCategory(CATEGORY_SPECIAL_SUMMON)
-    e1:SetType(EFFECT_TYPE_IGNITION)
-    e1:SetRange(LOCATION_HAND)
-    e1:SetCountLimit(1, id)
-    e1:SetTarget(s.sptg)
-    e1:SetOperation(s.spop)
+    e1:SetCategory(CATEGORY_TOHAND + CATEGORY_SEARCH)
+    e1:SetType(EFFECT_TYPE_ACTIVATE)
+    e1:SetCode(EVENT_FREE_CHAIN)
+    e1:SetOperation(s.activate)
     c:RegisterEffect(e1)
 
-    -- 2. Buscar Mágica/Trampa de AGUA/Shark al Invocarse Especial
+    -- 1. Aumento de 500 ATK/DEF a monstruos de AGUA
     local e2 = Effect.CreateEffect(c)
-    e2:SetDescription(aux.Stringid(id, 1))
-    e2:SetCategory(CATEGORY_TOHAND + CATEGORY_SEARCH)
-    e2:SetType(EFFECT_TYPE_SINGLE + EFFECT_TYPE_TRIGGER_O)
-    e2:SetCode(EVENT_SPSUMMON_SUCCESS)
-    e2:SetProperty(EFFECT_FLAG_DELAY)
-    e2:SetCountLimit(1, id + 100)
-    e2:SetTarget(s.thtg)
-    e2:SetOperation(s.thop)
+    e2:SetType(EFFECT_TYPE_FIELD)
+    e2:SetCode(EFFECT_UPDATE_ATTACK)
+    e2:SetRange(LOCATION_SZONE)
+    e2:SetTargetRange(LOCATION_MZONE, 0)
+    e2:SetTarget(aux.TargetBoolFunction(Card.IsAttribute, ATTRIBUTE_WATER))
+    e2:SetValue(500)
     c:RegisterEffect(e2)
 
-    -- 3. Invocación Especial de un Nivel 4 o menor desde el Cementerio
-    local e3 = Effect.CreateEffect(c)
-    e3:SetDescription(aux.Stringid(id, 2))
-    e3:SetCategory(CATEGORY_SPECIAL_SUMMON)
-    e3:SetType(EFFECT_TYPE_IGNITION)
-    e3:SetProperty(EFFECT_FLAG_CARD_TARGET)
-    e3:SetRange(LOCATION_MZONE)
-    e3:SetCountLimit(1)
-    e3:SetTarget(s.gytg)
-    e3:SetOperation(s.gyop)
+    local e3 = e2:Clone()
+    e3:SetCode(EFFECT_UPDATE_DEFENSE)
     c:RegisterEffect(e3)
 
-    -- 4. Otorga Efectos al Monstruo Xyz que lo use como Material
+    -- 3. Acoplar hasta 2 materiales desde cualquier Cementerio
     local e4 = Effect.CreateEffect(c)
-    e4:SetType(EFFECT_TYPE_SINGLE + EFFECT_TYPE_CONTINUOUS)
-    e4:SetCode(EVENT_BE_MATERIAL)
-    e4:SetCondition(s.efcon)
-    e4:SetOperation(s.efop)
+    e4:SetDescription(aux.Stringid(id, 0))
+    e4:SetType(EFFECT_TYPE_IGNITION)
+    e4:SetProperty(EFFECT_FLAG_CARD_TARGET)
+    e4:SetRange(LOCATION_SZONE)
+    e4:SetCountLimit(1)
+    e4:SetTarget(s.atttg)
+    e4:SetOperation(s.attop)
     c:RegisterEffect(e4)
+
+    -- 4. Buscar Mágica Subida de Rango (Rank-Up-Magic)
+    local e5 = Effect.CreateEffect(c)
+    e5:SetDescription(aux.Stringid(id, 1))
+    e5:SetCategory(CATEGORY_TOHAND + CATEGORY_SEARCH)
+    e5:SetType(EFFECT_TYPE_IGNITION)
+    e5:SetRange(LOCATION_SZONE)
+    e5:SetCountLimit(1)
+    e5:SetTarget(s.rumtg)
+    e5:SetOperation(s.rumop)
+    c:RegisterEffect(e5)
 end
 
--- Revelar e Invocar
-function s.revfilter(c)
-    return c:IsAttribute(ATTRIBUTE_WATER) and c:IsMonster() and not c:IsPublic()
+-- Búsqueda al activar basada en Monstruos Xyz de AGUA que controles
+function s.xyzfilter(c)
+    return c:IsFaceup() and c:IsType(TYPE_XYZ) and c:IsAttribute(ATTRIBUTE_WATER)
 end
 
-function s.sptg(e, tp, eg, ep, ev, re, r, rp, chk)
-    local c = e:GetHandler()
-    if chk == 0 then
-        return Duel.GetLocationCount(tp, LOCATION_MZONE) > 0
-            and c:IsCanBeSpecialSummoned(e, 0, tp, false, false)
-            and Duel.IsExistingMatchingCard(s.revfilter, tp, LOCATION_HAND, 0, 1, c)
-    end
-    Duel.SetOperationInfo(0, CATEGORY_SPECIAL_SUMMON, c, 1, 0, 0)
+function s.thfilter(c)
+    return c:IsAttribute(ATTRIBUTE_WATER) and c:IsAbleToHand()
 end
 
-function s.spop(e, tp, eg, ep, ev, re, r, rp)
-    local c = e:GetHandler()
-    if not c:IsRelateToEffect(e) then return end
-    
-    local g = Duel.GetMatchingGroup(s.revfilter, tp, LOCATION_HAND, 0, c)
-    if #g == 0 then return end
-    
-    Duel.Hint(HINT_SELECTMSG, tp, HINTMSG_CONFIRM)
-    local sg = g:Select(tp, 1, #g, nil)
-    Duel.ConfirmCards(1 - tp, sg)
-    Duel.ShuffleHand(tp)
-
-    if Duel.SpecialSummon(c, 0, tp, tp, false, false, POS_FACEUP) > 0 then
-        local ft = Duel.GetLocationCount(tp, LOCATION_MZONE)
-        if ft <= 0 then return end
+function s.activate(e, tp, eg, ep, ev, re, r, rp)
+    if not e:GetHandler():IsRelateToEffect(e) then return end
+    local count = Duel.GetMatchingGroupCount(s.xyzfilter, tp, LOCATION_MZONE, 0, nil)
+    if count > 0 and Duel.IsExistingMatchingCard(s.thfilter, tp, LOCATION_DECK, 0, 1, nil) 
+        and Duel.SelectYesNo(tp, aux.Stringid(id, 2)) then
         
-        local spg = sg:Filter(Card.IsCanBeSpecialSummoned, nil, e, 0, tp, false, false)
-        if #spg > 0 and Duel.SelectYesNo(tp, aux.Stringid(id, 3)) then
-            Duel.Hint(HINT_SELECTMSG, tp, HINTMSG_SPSUMMON)
-            local final_sp = spg:Select(tp, 1, ft, nil)
-            Duel.SpecialSummon(final_sp, 0, tp, tp, false, false, POS_FACEUP)
+        Duel.Hint(HINT_SELECTMSG, tp, HINTMSG_ATOHAND)
+        local g = Duel.SelectMatchingCard(tp, s.thfilter, tp, LOCATION_DECK, 0, 1, count, nil)
+        if #g > 0 then
+            Duel.SendtoHand(g, nil, REASON_EFFECT)
+            Duel.ConfirmCards(1 - tp, g)
         end
     end
 end
 
--- Búsqueda de Mágicas/Trampas
-function s.thfilter(c)
-    return (c:IsSetCard(0x10f3) or c:IsSetCard(0x73) or c:ListsAttribute(ATTRIBUTE_WATER)) 
-        and c:IsType(TYPE_SPELL + TYPE_TRAP) and c:IsAbleToHand()
+-- Acoplar materiales desde el Cementerio
+function s.matfilter(c)
+    return c:IsAttribute(ATTRIBUTE_WATER) and c:IsMonster() and not c:IsForbidden()
 end
 
-function s.thtg(e, tp, eg, ep, ev, re, r, rp, chk)
-    if chk == 0 then return Duel.IsExistingMatchingCard(s.thfilter, tp, LOCATION_DECK, 0, 1, nil) end
+function s.atttg(e, tp, eg, ep, ev, re, r, rp, chk, chkc)
+    if chkc then return false end
+    if chk == 0 then
+        return Duel.IsExistingTarget(s.xyzfilter, tp, LOCATION_MZONE, 0, 1, nil)
+            and Duel.IsExistingTarget(s.matfilter, tp, LOCATION_GRAVE, LOCATION_GRAVE, 1, nil)
+    end
+    Duel.Hint(HINT_SELECTMSG, tp, HINTMSG_FACEUP)
+    local g1 = Duel.SelectTarget(tp, s.xyzfilter, tp, LOCATION_MZONE, 0, 1, 1, nil)
+    Duel.Hint(HINT_SELECTMSG, tp, HINTMSG_ATTACH)
+    local g2 = Duel.SelectTarget(tp, s.matfilter, tp, LOCATION_GRAVE, LOCATION_GRAVE, 1, 2, nil)
+    e:SetLabelObject(g1:GetFirst())
+end
+
+function s.attop(e, tp, eg, ep, ev, re, r, rp)
+    local xyz = e:GetLabelObject()
+    if not xyz or not xyz:IsRelateToEffect(e) or xyz:IsFacedown() then return end
+    local g = Duel.GetTargetCards(e):Filter(Card.IsLocation, xyz, LOCATION_GRAVE)
+    if #g > 0 then
+        Duel.Overlay(xyz, g)
+    end
+end
+
+-- Buscar Rank-Up-Magic
+function s.rumfilter(c)
+    return c:IsSetCard(0x95) and c:IsType(TYPE_SPELL) and c:IsAbleToHand()
+end
+
+function s.rumtg(e, tp, eg, ep, ev, re, r, rp, chk)
+    if chk == 0 then return Duel.IsExistingMatchingCard(s.rumfilter, tp, LOCATION_DECK, 0, 1, nil) end
     Duel.SetOperationInfo(0, CATEGORY_TOHAND, nil, 1, tp, LOCATION_DECK)
 end
 
-function s.thop(e, tp, eg, ep, ev, re, r, rp)
+function s.rumop(e, tp, eg, ep, ev, re, r, rp)
     Duel.Hint(HINT_SELECTMSG, tp, HINTMSG_ATOHAND)
-    local g = Duel.SelectMatchingCard(tp, s.thfilter, tp, LOCATION_DECK, 0, 1, 1, nil)
+    local g = Duel.SelectMatchingCard(tp, s.rumfilter, tp, LOCATION_DECK, 0, 1, 1, nil)
     if #g > 0 then
         Duel.SendtoHand(g, nil, REASON_EFFECT)
         Duel.ConfirmCards(1 - tp, g)
     end
-end
-
--- Revivir del GY Nivel 4 o menor
-function s.gyfilter(c, e, tp)
-    return c:IsAttribute(ATTRIBUTE_WATER) and c:GetLevel() > 0 and c:GetLevel() <= 4 
-        and c:IsCanBeSpecialSummoned(e, 0, tp, false, false)
-end
-
-function s.gytg(e, tp, eg, ep, ev, re, r, rp, chk, chkc)
-    if chkc then return chkc:IsLocation(LOCATION_GRAVE) and chkc:IsControler(tp) and s.gyfilter(chkc, e, tp) end
-    if chk == 0 then return Duel.GetLocationCount(tp, LOCATION_MZONE) > 0 
-        and Duel.IsExistingTarget(s.gyfilter, tp, LOCATION_GRAVE, 0, 1, nil, e, tp) end
-    Duel.Hint(HINT_SELECTMSG, tp, HINTMSG_SPSUMMON)
-    local g = Duel.SelectTarget(tp, s.gyfilter, tp, LOCATION_GRAVE, 0, 1, 1, nil, e, tp)
-    Duel.SetOperationInfo(0, CATEGORY_SPECIAL_SUMMON, g, 1, 0, 0)
-end
-
-function s.gyop(e, tp, eg, ep, ev, re, r, rp)
-    local tc = Duel.GetFirstTarget()
-    if tc and tc:IsRelateToEffect(e) then
-        Duel.SpecialSummon(tc, 0, tp, tp, false, false, POS_FACEUP)
-    end
-end
-
--- Otorgar Inmune a Batalla y Doble Ataque al Xyz
-function s.efcon(e, tp, eg, ep, ev, re, r, rp)
-    return r == REASON_XYZ and e:GetHandler():GetReasonCard():IsAttribute(ATTRIBUTE_WATER)
-end
-
-function s.efop(e, tp, eg, ep, ev, re, r, rp)
-    local c = e:GetHandler()
-    local rc = c:GetReasonCard()
-    
-    -- No destruible por batalla
-    local e1 = Effect.CreateEffect(rc)
-    e1:SetType(EFFECT_TYPE_SINGLE)
-    e1:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)
-    e1:SetValue(1)
-    e1:SetReset(RESET_EVENT + RESETS_STANDARD)
-    rc:RegisterEffect(e1, true)
-
-    -- Atacar dos veces
-    local e2 = Effect.CreateEffect(rc)
-    e2:SetType(EFFECT_TYPE_SINGLE)
-    e2:SetCode(EFFECT_EXTRA_ATTACK)
-    e2:SetValue(1)
-    e2:SetReset(RESET_EVENT + RESETS_STANDARD)
-    rc:RegisterEffect(e2, true)
 end
