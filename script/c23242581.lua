@@ -41,14 +41,14 @@ function s.initial_effect(c)
     e5:SetCode(EVENT_CHAINING)
     e5:SetRange(LOCATION_MZONE)
     e5:SetCondition(s.discon)
-    e5:SetCost(aux.dxmcostgen(1, 1, nil))
+    e5:SetCost(s.cost)
     e5:SetTarget(s.distg)
     e5:SetOperation(s.disop)
     c:RegisterEffect(e5)
 end
 
 function s.ovfilter(c, tp, lc)
-    return c:IsFaceup() and (c:IsCode(65676461) or c:IsCode(32390585))
+    return c:IsFaceup() and (c:IsCode(65676461) or c:IsCode(32390585) or c:IsCode(23242580))
 end
 
 function s.atkval(e, c)
@@ -61,6 +61,12 @@ end
 
 function s.discon(e, tp, eg, ep, ev, re, r, rp)
     return rp ~= tp and Duel.IsChainNegatable(ev)
+end
+
+-- Costo de desacoplar 1 material sin funciones obsoletas
+function s.cost(e, tp, eg, ep, ev, re, r, rp, chk)
+    if chk == 0 then return e:GetHandler():CheckRemoveOverlayCard(tp, 1, REASON_COST) end
+    e:GetHandler():RemoveOverlayCard(tp, 1, 1, REASON_COST)
 end
 
 function s.gyfilter(c)
@@ -85,4 +91,3 @@ function s.disop(e, tp, eg, ep, ev, re, r, rp)
         end
     end
 end
-
