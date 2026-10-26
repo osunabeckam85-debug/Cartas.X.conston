@@ -15,7 +15,7 @@ function s.initial_effect(c)
     e1:SetValue(s.efilter)
     c:RegisterEffect(e1)
 
-    -- 2. Destruir cartas según el Nivel de un "Blue-Eyes" en el GY
+    -- 2. Destruir cartas según el Nivel de un "Blue-Eyes" en el GY (Efecto de Ignición)
     local e2 = Effect.CreateEffect(c)
     e2:SetDescription(aux.Stringid(id, 0))
     e2:SetCategory(CATEGORY_DESTROY)
@@ -27,7 +27,7 @@ function s.initial_effect(c)
     e2:SetOperation(s.desop)
     c:RegisterEffect(e2)
 
-    -- 3. Negación múltiple (2 Mágicas, 2 Trampas, 2 Monstruos por turno)
+    -- 3. Negación Rápida (Efecto Rápido)
     local e3 = Effect.CreateEffect(c)
     e3:SetDescription(aux.Stringid(id, 1))
     e3:SetCategory(CATEGORY_DISABLE)
@@ -40,15 +40,13 @@ function s.initial_effect(c)
     e3:SetOperation(s.negop)
     c:RegisterEffect(e3)
 
-    -- 4. Reingresar materiales al Deck y traer otro Sincronía Blue-Eyes
+    -- 4. Reingresar cartas del GY al Deck e Invocar un Sincronía Blue-Eyes (Efecto de Ignición seguro para móviles)
     local e4 = Effect.CreateEffect(c)
     e4:SetDescription(aux.Stringid(id, 2))
     e4:SetCategory(CATEGORY_SPECIAL_SUMMON + CATEGORY_TODECK)
-    e4:SetType(EFFECT_TYPE_FIELD + EFFECT_TYPE_TRIGGER_O)
-    e4:SetCode(EVENT_CHAIN_RESOLVED)
+    e4:SetType(EFFECT_TYPE_IGNITION)
     e4:SetRange(LOCATION_MZONE)
     e4:SetCountLimit(1)
-    e4:SetCondition(s.spcon2)
     e4:SetTarget(s.sptg2)
     e4:SetOperation(s.spop2)
     c:RegisterEffect(e4)
@@ -62,9 +60,9 @@ function s.efilter(e, te)
     return te:GetOwner() ~= e:GetHandler()
 end
 
--- Destruir por Nivel
+-- Filtro de Blue-Eyes en el Cementerio para destrucción por Nivel
 function s.desfilter(c)
-    return (c:IsSetCard(0xdd) or c:IsCode(89631139)) and c:GetLevel() > 0 and c:IsAbleToGrave()
+    return (c:IsSetCard(0xdd) or c:IsCode(89631139) or c:ListsCode(89631139)) and c:GetLevel() > 0
 end
 
 function s.destg(e, tp, eg, ep, ev, re, r, rp, chk, chkc)
@@ -89,7 +87,7 @@ function s.desop(e, tp, eg, ep, ev, re, r, rp)
     end
 end
 
--- Negación múltiple
+-- Negación Rápida
 function s.negcon(e, tp, eg, ep, ev, re, r, rp)
     return rp ~= tp and Duel.IsChainNegatable(ev)
 end
@@ -103,14 +101,11 @@ function s.negop(e, tp, eg, ep, ev, re, r, rp)
     Duel.NegateActivation(ev)
 end
 
--- Reemplazo de Sincronía
-function s.spcon2(e, tp, eg, ep, ev, re, r, rp)
-    return re:GetHandler() == e:GetHandler()
-end
-
+-- Reemplazo de Sincronía (Cambiado a efecto de Ignición para evitar errores de argumentos nulos en móvil)
 function s.sptg2(e, tp, eg, ep, ev, re, r, rp, chk)
     if chk == 0 then return Duel.IsExistingMatchingCard(Card.IsAbleToDeck, tp, LOCATION_GRAVE, 0, 1, nil)
         and Duel.IsExistingMatchingCard(s.syncfilter, tp, LOCATION_EXTRA, 0, 1, nil, e, tp) end
+    Duel.SetOperationInfo(0, CATEGORY_TODECK, nil, 1, tp, LOCATION_GRAVE)
     Duel.SetOperationInfo(0, CATEGORY_SPECIAL_SUMMON, nil, 1, tp, LOCATION_EXTRA)
 end
 
