@@ -2,8 +2,8 @@
 local s, id = GetID()
 function s.initial_effect(c)
     c:EnableReviveLimit()
-    -- Procedimiento de Fusión genérico para Héroes
-    Fusion.AddProcMixRep(c, true, true, aux.FilterBoolFunctionEx(Card.IsSetCard, 0x8), 1, 99)
+    -- Procedimiento de Fusión estándar y 100% seguro para EDOPro móvil: 2 o más monstruos "HÉROE"
+    Fusion.AddProcMixRep(c, true, true, aux.FilterBoolFunctionEx(Card.IsSetCard, 0x8), 2, 99)
 
     -- 1. Búsqueda de Mágica de Fusión al ser Invocado por Fusión
     local e1 = Effect.CreateEffect(c)
@@ -70,7 +70,6 @@ end
 -- Negar selección automáticamente
 function s.negotarget(e, tp, eg, ep, ev, re, r, rp)
     Duel.Hint(HINT_CARD, 0, id)
-    -- Evita la selección y neutraliza la acción hostil
 end
 
 -- Negar cartas del rival en Fase de Batalla

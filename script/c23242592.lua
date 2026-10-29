@@ -1,7 +1,7 @@
 -- Evil HERO Skarlet
 local s, id = GetID()
 function s.initial_effect(c)
-    -- Invocación Especial revelando un HÉROE en la mano (Estándar seguro)
+    -- Invocación Especial revelando un HÉROE en la mano
     local e1 = Effect.CreateEffect(c)
     e1:SetType(EFFECT_TYPE_FIELD)
     e1:SetCode(EFFECT_SPSUMMON_PROC)
@@ -61,13 +61,13 @@ function s.initial_effect(c)
     e5:SetOperation(s.spop3)
     c:RegisterEffect(e5)
 
-    -- Reciclar Fusión y hasta 2 Héroes al ser destruido
+    -- Reciclar Fusión y hasta 2 Héroes al ser destruido (Versión segura para móviles)
     local e6 = Effect.CreateEffect(c)
     e6:SetDescription(aux.Stringid(id, 4))
     e6:SetCategory(CATEGORY_TOHAND)
     e6:SetType(EFFECT_TYPE_SINGLE + EFFECT_TYPE_TRIGGER_O)
     e6:SetCode(EVENT_DESTROYED)
-    e6:SetProperty(EFFECT_FLAG_DELAY + EFFECT_FLAG_CARD_TARGET)
+    e6:SetProperty(EFFECT_FLAG_DELAY)
     e6:SetTarget(s.thtg2)
     e6:SetOperation(s.thop2)
     c:RegisterEffect(e6)
@@ -193,6 +193,7 @@ function s.spop3(e, tp, eg, ep, ev, re, r, rp)
     end
 end
 
+-- Filtros seguros para reciclaje al ser destruido
 function s.recfusfilter(c)
     return c:IsSetCard(0x46) and c:IsType(TYPE_SPELL) and c:IsAbleToHand()
 end
@@ -201,22 +202,22 @@ function s.recherolective(c)
     return c:IsSetCard(0x8) and c:IsMonster() and c:IsAbleToHand()
 end
 
-function s.thtg2(e, tp, eg, ep, ev, re, r, rp, chk, chkc)
-    if chkc then return false end
-    if chk == 0 then return Duel.IsExistingTarget(s.recfusfilter, tp, LOCATION_GRAVE, 0, 1, nil)
-        and Duel.IsExistingTarget(s.recherolective, tp, LOCATION_GRAVE, 1, 2, nil) end
-    Duel.Hint(HINT_SELECTMSG, tp, HINTMSG_ATOHAND)
-    local g1 = Duel.SelectTarget(tp, s.recfusfilter, tp, LOCATION_GRAVE, 0, 1, 1, nil)
-    Duel.Hint(HINT_SELECTMSG, tp, HINTMSG_ATOHAND)
-    local g2 = Duel.SelectTarget(tp, s.recherolective, tp, LOCATION_GRAVE, 1, 2, nil)
-    g1:Merge(g2)
-    Duel.SetOperationInfo(0, CATEGORY_TOHAND, g1, #g1, 0, 0)
+function s.thtg2(e, tp, eg, ep, ev, re, r, rp, chk)
+    if chk == 0 then return Duel.IsExistingMatchingCard(s.recfusfilter, tp, LOCATION_GRAVE, 0, 1, nil)
+        and Duel.IsExistingMatchingCard(s.recherolective, tp, LOCATION_GRAVE, 1, 2, nil) end
+    Duel.SetOperationInfo(0, CATEGORY_TOHAND, nil, 3, tp, LOCATION_GRAVE)
 end
 
 function s.thop2(e, tp, eg, ep, ev, re, r, rp)
-    local g = Duel.GetTargetCards(e)
-    if #g > 0 then
-        Duel.SendtoHand(g, nil, REASON_EFFECT)
-        Duel.ConfirmCards(1 - tp, g)
+    Duel.Hint(HINT_SELECTMSG, tp, HINTMSG_ATOHAND)
+    local g1 = Duel.SelectMatchingCard(tp, s.recfusfilter, tp, LOCATION_GRAVE, 0, 1, 1, nil)
+    if #g1 > 0 then
+        Duel.Hint(HINT_SELECTMSG, tp, HINTMSG_ATOHAND)
+        local g2 = Duel.SelectMatchingCard(tp, s.recherolective, tp, LOCATION_GRAVE, 0, 1, 2, nil)
+        if #g2 > 0 then
+            g1:Merge(g2)
+            Duel.SendtoHand(g1, nil, REASON_EFFECT)
+            Duel.ConfirmCards(1 - tp, g1)
+        end
     end
 end
