@@ -2,8 +2,8 @@
 local s, id = GetID()
 function s.initial_effect(c)
     c:EnableReviveLimit()
-    -- Procedimiento de Fusión estándar y 100% seguro para EDOPro móvil: 2 o más monstruos "HÉROE"
-    Fusion.AddProcMixRep(c, true, true, aux.FilterBoolFunctionEx(Card.IsSetCard, 0x8), 2, 99)
+    -- Procedimiento de Fusión seguro para móviles: 2 monstruos "HÉROE"
+    Fusion.AddProcMix(c, true, true, aux.FilterBoolFunctionEx(Card.IsSetCard, 0x8), aux.FilterBoolFunctionEx(Card.IsSetCard, 0x8))
 
     -- 1. Búsqueda de Mágica de Fusión al ser Invocado por Fusión
     local e1 = Effect.CreateEffect(c)
