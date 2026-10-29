@@ -1,7 +1,7 @@
 -- Evil HERO Skarlet
 local s, id = GetID()
 function s.initial_effect(c)
-    -- Invocación Especial revelando un HÉROE en la mano
+    -- Invocación Especial revelando un HÉROE en la mano (Estándar seguro)
     local e1 = Effect.CreateEffect(c)
     e1:SetType(EFFECT_TYPE_FIELD)
     e1:SetCode(EFFECT_SPSUMMON_PROC)
@@ -29,7 +29,7 @@ function s.initial_effect(c)
     e3:SetCategory(CATEGORY_SPECIAL_SUMMON)
     e3:SetType(EFFECT_TYPE_SINGLE + EFFECT_TYPE_TRIGGER_O)
     e3:SetCode(EVENT_SUMMON_SUCCESS)
-    e3:RegisterEffect(e3)
+    c:RegisterEffect(e3)
     local e3b = e3:Clone()
     e3b:SetCode(EVENT_SPSUMMON_SUCCESS)
     c:RegisterEffect(e3b)
@@ -119,7 +119,6 @@ function s.thop(e, tp, eg, ep, ev, re, r, rp)
     end
 end
 
--- Efecto de Skarlet (Invocar Evil HERO desde mano con ATK <= 1400)
 function s.skfilter(c, e, tp, atk)
     return c:IsSetCard(0x6008) and c:IsAttackBelow(atk) and c:IsCanBeSpecialSummoned(e, 0, tp, false, false)
 end
@@ -141,7 +140,6 @@ function s.skop(e, tp, eg, ep, ev, re, r, rp)
     end
 end
 
--- Spam de Héroes nivel 5 o menor con efectos negados
 function s.spmfilter(c, e, tp)
     return c:IsSetCard(0x8) and c:IsLevelBelow(5) and c:IsCanBeSpecialSummoned(e, 0, tp, false, false, POS_FACEUP)
 end

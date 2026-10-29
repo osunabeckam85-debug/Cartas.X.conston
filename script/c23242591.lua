@@ -1,17 +1,7 @@
 -- Elemental HERO Striking Sparkman
 local s, id = GetID()
 function s.initial_effect(c)
-    -- Siempre tratada como "Elemental HERO Sparkman"
-    aux.AddCodeList(c, 84749824) -- Código oficial de Elemental HERO Sparkman
-    local e0 = Effect.CreateEffect(c)
-    e0:SetType(EFFECT_TYPE_SINGLE)
-    e0:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
-    e0:SetCode(EFFECT_ADD_CODE)
-    e0:SetRange(LOCATION_HAND + LOCATION_MZONE + LOCATION_GRAVE)
-    e0:SetValue(84749824)
-    c:RegisterEffect(e0)
-
-    -- Invocación Especial revelando un HÉROE en la mano
+    -- Invocación Especial revelando un HÉROE en la mano (Estándar seguro)
     local e1 = Effect.CreateEffect(c)
     e1:SetType(EFFECT_TYPE_FIELD)
     e1:SetCode(EFFECT_SPSUMMON_PROC)
